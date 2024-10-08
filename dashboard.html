@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Break and Segment Mappings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+        }
+
+        h1, h2 {
+            color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #444444;
+            text-align: left;
+        }
+
+        th {
+            background-color: #333333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #1f1f1f;
+        }
+
+        .input-row {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-row input {
+            margin-right: 10px;
+            padding: 8px;
+            border: 1px solid #444444;
+            background-color: #1f1f1f;
+            color: #ffffff;
+        }
+
+        .input-row button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+
+        .input-row button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .clear-button {
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+            display: none;
+        }
+
+        select {
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            padding: 6px;
+        }
+
+        /* Styles for the vertical rail */
+        .rail {
+            width: 300px;
+            max-height: 100vh;
+            overflow-y: auto;
+            border-left: 2px solid #333;
+            padding: 10px;
+        }
+
+        .rail table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rail th, .rail td {
+            padding: 8px;
+            border: 1px solid #444444;
+            text-align: left;
+        }
+
+        .rail th {
+            background-color: #444;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .rail tr:nth-child(even) {
+            background-color: #1f1f1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>Ad Break and Segment Dashboard</h1>
+
+        <h2>Available Ad-Breaks</h2>
+        <table id="adBreakTable">
+            <thead>
+                <tr>
+                    <th>BreakID</th>
+                    <th>Ad-Mapping</th>
+                    <th>Assign</th> <!-- Renamed Action to Assign -->
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Ad-break rows will be populated here -->
+            </tbody>
+        </table>
+
+        <h2>Segment Mappings</h2>
+        <table id="segmentTable">
+            <thead>
+                <tr>
+                    <th>Segment Name</th>
+                    <th>Segment Mapping</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Segment rows will be populated here -->
+            </tbody>
+        </table>
+
+        <div class="input-row">
+            <input type="text" id="idInput" placeholder="ID" />
+            <input type="text" id="destInput" placeholder="Dest" />
+            <button id="addButton" disabled>New Mapping</button>
+        </div>
+        <div class="error-message" id="errorMessage">Oops! An error occurred.</div>
+    </div>
+
+    <!-- Vertical Rail to display JSON data -->
+    <div class="rail">
+        <h2>Client Beacons</h2>
+        <table id="messageTable">
+            <thead>
+                <tr>
+                    <th>Received</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows for received Client Beacon data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Function to update the Ad Break and Segment tables from the provided data
+        function updateTables(data) {
+            const adBreakTableBody = document.getElementById('adBreakTable').getElementsByTagName('tbody')[0];
+            adBreakTableBody.innerHTML = ''; // Clear current table rows
+
+            data.AdBreaks.forEach(adBreak => {
+                const tr = document.createElement('tr');
+
+                const tdBreakID = document.createElement('td');
+                tdBreakID.textContent = adBreak; // BreakID from AdBreaks
+
+                const tdAdMapping = document.createElement('td');
+                tdAdMapping.textContent = data.AdBreakMappings[adBreak] || ""; // Display Ad-Mapping or leave blank if none
+
+                const tdAssign = document.createElement('td');
+                const selectDropdown = document.createElement('select');
+
+                const options = ["Smash", "Arrow", "Spikes", "None"];
+                options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.textContent = option;
+                    if ((data.AdBreakMappings[adBreak] || "None") === option) {
+                        opt.selected = true;
+                    }
+                    selectDropdown.appendChild(opt);
+                });
+
+                selectDropdown.onchange = async function() {
+                    const selectedAd = selectDropdown.value;
+                    if (data.AdBreakMappings[adBreak] === selectedAd) {
+                        return;
+                    }
+                    const payload = {
+                        break_id: adBreak,
+                        ad: selectedAd
+                    };
+                    const postResponse = await fetch('/map', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (postResponse.ok) {
+                        const updatedData = await postResponse.json();
+                        updateTables(updatedData); // Update the page with the returned data
+                    }
+                };
+
+                tdAssign.appendChild(selectDropdown);
+                tr.appendChild(tdBreakID);
+                tr.appendChild(tdAdMapping);
+                tr.appendChild(tdAssign);
+                adBreakTableBody.appendChild(tr);
+            });
+
+            const segmentTableBody = document.getElementById('segmentTable').getElementsByTagName('tbody')[0];
+            segmentTableBody.innerHTML = ''; 
+            Object.keys(data.SegmentMappings).forEach(segmentName => {
+                const tr = document.createElement('tr');
+                const tdSegmentName = document.createElement('td');
+                tdSegmentName.textContent = segmentName;
+
+                const tdSegmentMapping = document.createElement('td');
+                tdSegmentMapping.textContent = data.SegmentMappings[segmentName];
+
+                const tdAction = document.createElement('td');
+                const clearButton = document.createElement('button');
+                clearButton.textContent = 'Clear';
+                clearButton.className = 'clear-button';
+                clearButton.onclick = async function() {
+                    const deleteResponse = await fetch(`/segment/${segmentName}`, { method: 'DELETE' });
+                    if (deleteResponse.ok) {
+                        const updatedData = await deleteResponse.json();
+                        updateTables(updatedData); 
+                    }
+                };
+
+                tdAction.appendChild(clearButton);
+                tr.appendChild(tdSegmentName);
+                tr.appendChild(tdSegmentMapping);
+                tr.appendChild(tdAction);
+                segmentTableBody.appendChild(tr);
+            });
+        }
+
+        // Function to fetch and display the UDP messages in the vertical rail
+        async function fetchMessages() {
+            try {
+                const response = await fetch('http://localhost:8084/status');
+                const data = await response.json();
+
+                const messageTableBody = document.getElementById('messageTable').getElementsByTagName('tbody')[0];
+                messageTableBody.innerHTML = ''; 
+
+                data.forEach(msg => {
+                    const tr = document.createElement('tr');
+                    const tdReceived = document.createElement('td');
+                    const tdMessage = document.createElement('td');
+
+                    tdReceived.textContent = new Date(msg.received).toLocaleString();
+                    tdMessage.textContent = msg.message;
+
+                    tr.appendChild(tdReceived);
+                    tr.appendChild(tdMessage);
+                    messageTableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            }
+        }
+
+        // Refresh the message table every second
+        setInterval(fetchMessages, 1000);
+
+        // Initial fetch to populate tables on page load
+        async function fetchAndUpdate() {
+            try {
+                const response = await fetch('./dashboard.json');
+                const data = await response.json();
+                updateTables(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Initial fetch
+        fetchAndUpdate();
+
+        // Add event listeners for input changes and button click
+        document.getElementById('idInput').addEventListener('input', toggleButtonState);
+        document.getElementById('destInput').addEventListener('input', toggleButtonState);
+        document.getElementById('addButton').addEventListener('click', addNewMapping);
+    </script>
+</body>
+</html>

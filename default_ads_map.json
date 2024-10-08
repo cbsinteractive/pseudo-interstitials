@@ -1,0 +1,20 @@
+{
+    "Arrow": [
+        "http://localhost:8080/ads/BigBuck_Arrow_init.mp4",
+        "http://localhost:8080/ads/BigBuck_Arrow0.m4s",
+        "http://localhost:8080/ads/BigBuck_Arrow1.m4s",
+        "http://localhost:8080/ads/BigBuck_Arrow2.m4s"
+    ],
+    "Spikes": [
+        "http://localhost:8080/ads/BigBuck_Spikes_init.mp4",
+        "http://localhost:8080/ads/BigBuck_Spikes0.m4s",
+        "http://localhost:8080/ads/BigBuck_Spikes1.m4s",
+        "http://localhost:8080/ads/BigBuck_Spikes2.m4s"
+    ],
+    "Smash": [
+        "http://localhost:8080/ads/BigBuck_Smash_init.mp4",
+        "http://localhost:8080/ads/BigBuck_Smash0.m4s",
+        "http://localhost:8080/ads/BigBuck_Smash1.m4s",
+        "http://localhost:8080/ads/BigBuck_Smash2.m4s"
+    ]
+}
